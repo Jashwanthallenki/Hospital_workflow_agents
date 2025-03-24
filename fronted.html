@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Query</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f9fc;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .input-container {
+            display: flex;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #response {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .loading {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Process Query</h1>
+
+    <div class="input-container">
+        <input type="text" id="query" placeholder="Enter your query">
+        <button onclick="sendQuery()">Send</button>
+    </div>
+
+    <div id="response">Enter a query to interact with the system.</div>
+
+    <script>
+        function sendQuery() {
+            const query = document.getElementById('query').value.trim();
+
+            if (!query) {
+                document.getElementById('response').innerText = 'Please enter a query first.';
+                return;
+            }
+
+            document.getElementById('response').innerHTML = '<div class="loading">Processing...</div>';
+
+            fetch('http://192.168.252.119:5000/process_query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('response').innerText = data.response || 'No response received.';
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = 'Error: ' + error.message;
+            });
+        }
+    </script>
+
+</body>
+</html>
