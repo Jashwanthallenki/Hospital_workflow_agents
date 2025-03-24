@@ -3,7 +3,7 @@ import requests
 import os
 import json
 import google.generativeai as genai
-from Hospital_workflow_agents.db import init_db
+from db import init_db
 
 # Configure Google Gemini API using environment variable
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
