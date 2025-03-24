@@ -3,100 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Process Query</title>
+    <title>Hospital Management System</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f9fc;
-            text-align: center;
         }
-
+        
         h1 {
             color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
         }
-
+        
         .input-container {
             display: flex;
-            margin: 20px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        input {
+        
+        #query {
             flex: 1;
-            padding: 12px;
+            padding: 12px 15px;
             border: none;
             font-size: 16px;
         }
-
+        
         button {
             background-color: #3498db;
             color: white;
-            padding: 12px;
-            font-size: 16px;
             border: none;
+            padding: 12px 20px;
             cursor: pointer;
+            font-size: 16px;
             transition: background-color 0.3s;
         }
-
+        
         button:hover {
             background-color: #2980b9;
         }
-
+        
         #response {
             background-color: white;
             padding: 20px;
             border-radius: 8px;
-            min-height: 50px;
+            min-height: 100px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            white-space: pre-line;
         }
-
+        
         .loading {
-            font-style: italic;
+            text-align: center;
             color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .examples {
+            margin-top: 30px;
+        }
+        
+        .example-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .example-query {
+            background-color: #e1f0fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .example-query:hover {
+            background-color: #d0e7f5;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .status.online {
+            color: #27ae60;
+        }
+        
+        .status.offline {
+            color: #e74c3c;
         }
     </style>
 </head>
 <body>
-
-    <h1>Process Query</h1>
-
+    <h1>Hospital Management System</h1>
+    
     <div class="input-container">
-        <input type="text" id="query" placeholder="Enter your query">
+        <input type="text" id="query" placeholder="Enter your query (e.g., 'Schedule an appointment for John with Dr. Smith tomorrow at 2 PM')">
         <button onclick="sendQuery()">Send</button>
     </div>
-
-    <div id="response">Enter a query to interact with the system.</div>
-
+    
+    <div id="response">Enter a query above to interact with the system.</div>
+    
+    <div class="examples">
+        <h3>Example queries:</h3>
+        <div class="example-queries">
+            <div class="example-query" onclick="useExample(this)">Schedule an appointment for Sarah with Dr. Wilson on March 15th at 3:00 PM</div>
+            <div class="example-query" onclick="useExample(this)">What appointments does John Doe have?</div>
+            <div class="example-query" onclick="useExample(this)">Book a visit for Tom with Dr. Lee tomorrow at noon</div>
+        </div>
+    </div>
+    
+    <div id="system-status" class="status">Checking system status...</div>
+    
     <script>
+        // Check system status on page load
+        window.addEventListener('DOMContentLoaded', checkSystemStatus);
+        
+        // Check if the system is running
+        function checkSystemStatus() {
+            fetch('http://localhost:5000/health')
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('system-status').className = 'status online';
+                        document.getElementById('system-status').innerText = '✓ System online and ready';
+                    } else {
+                        setOfflineStatus();
+                    }
+                })
+                .catch(() => {
+                    setOfflineStatus();
+                });
+        }
+        
+        function setOfflineStatus() {
+            document.getElementById('system-status').className = 'status offline';
+            document.getElementById('system-status').innerHTML = '✗ System offline. Make sure the backend is running.<br>Check the console for error details.';
+        }
+        
+        // Use example query
+        function useExample(element) {
+            document.getElementById('query').value = element.innerText;
+        }
+        
+        // Send query to backend
         function sendQuery() {
             const query = document.getElementById('query').value.trim();
-
+            
             if (!query) {
                 document.getElementById('response').innerText = 'Please enter a query first.';
                 return;
             }
-
-            document.getElementById('response').innerHTML = '<div class="loading">Processing...</div>';
-
-            fetch('http://192.168.252.119:5000/process_query', {
+            
+            // Show loading state
+            document.getElementById('response').innerHTML = '<div class="loading">Processing your request...</div>';
+            
+            // Send request to the correct endpoint
+            fetch('http://localhost:5000/process_query', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: query })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    query: query,
+                    timestamp: new Date().toISOString(),
+                    user_id: 'web-user-' + Math.floor(Math.random() * 1000)
+                })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
             .then(data => {
-                document.getElementById('response').innerText = data.response || 'No response received.';
+                if (data.error) {
+                    document.getElementById('response').innerText = 'Error: ' + data.error;
+                } else {
+                    document.getElementById('response').innerText = data.response || 'No response received.';
+                }
             })
             .catch(error => {
-                document.getElementById('response').innerText = 'Error: ' + error.message;
+                console.error('Error:', error);
+                document.getElementById('response').innerText = 'An error occurred: ' + error.message;
+                checkSystemStatus(); // Check if system is still online
             });
         }
+        
+        // Allow Enter key to submit
+        document.getElementById('query').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendQuery();
+            }
+        });
     </script>
-
 </body>
 </html>
