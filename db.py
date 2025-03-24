@@ -11,7 +11,7 @@ def init_db():
                         (id INTEGER PRIMARY KEY, patient_name TEXT, doctor_name TEXT, date TEXT, time TEXT)''')
                         
             conn.commit()
-            print("Database initialized with sample data.")
+            print("Database initialized.")
     except Exception as e:
         print(f"Database initialization error: {str(e)}")
 
