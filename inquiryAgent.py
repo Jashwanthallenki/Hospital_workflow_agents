@@ -2,14 +2,18 @@ from flask import Flask, request, jsonify
 import sqlite3
 from contextlib import closing
 from db import init_db
+from flask_cors import CORS  # Import CORS
 
 class AppointmentInquirerAgent:
     def __init__(self):
         self.app = Flask(__name__)
+        CORS(self.app)  # Enable CORS for all routes
+
         self.query = None
         self.intent = None
         self.entities = {}
         self.metadata = {}
+
         self.app.route('/inquire_appointment', methods=['POST'])(self.inquire_appointment)
         self.app.route('/health', methods=['GET'])(self.health_check)
 
@@ -61,4 +65,4 @@ if __name__ == '__main__':
     print("Starting Inquirer Agent on http://localhost:5002...")
     init_db()  # Initialize the database
     inquirer = AppointmentInquirerAgent()
-    inquirer.app.run(port=5002, debug=True, threaded=True)
+    inquirer.app.run(port=5002, debug=True, threaded=True) 
