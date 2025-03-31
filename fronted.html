@@ -107,7 +107,7 @@
     <h1>Hospital Management System</h1>
     
     <div class="input-container">
-        <input type="text" id="query" placeholder="Enter your query (e.g., 'Schedule an appointment for John with Dr. Smith tomorrow at 2 PM')">
+        <input type="text" id="query" placeholder="Enter your query (e.g., 'I have a high fever and sore throat')">
         <button onclick="sendQuery()">Send</button>
     </div>
     
@@ -119,6 +119,7 @@
             <div class="example-query" onclick="useExample(this)">Schedule an appointment for Sarah with Dr. Wilson on March 15th at 3:00 PM</div>
             <div class="example-query" onclick="useExample(this)">What appointments does John Doe have?</div>
             <div class="example-query" onclick="useExample(this)">Book a visit for Tom with Dr. Lee tomorrow at noon</div>
+            <div class="example-query" onclick="useExample(this)">I'm feeling very weak, have a headache, and my throat is sore</div>
         </div>
     </div>
     
@@ -128,7 +129,6 @@
         // Check system status on page load
         window.addEventListener('DOMContentLoaded', checkSystemStatus);
         
-        // Check if the system is running
         function checkSystemStatus() {
             fetch('http://localhost:5000/health')
                 .then(response => {
@@ -149,12 +149,10 @@
             document.getElementById('system-status').innerHTML = '✗ System offline. Make sure the backend is running.<br>Check the console for error details.';
         }
         
-        // Use example query
         function useExample(element) {
             document.getElementById('query').value = element.innerText;
         }
         
-        // Send query to backend
         function sendQuery() {
             const query = document.getElementById('query').value.trim();
             
@@ -163,30 +161,21 @@
                 return;
             }
             
-            // Show loading state
             document.getElementById('response').innerHTML = '<div class="loading">Processing your request...</div>';
             
-            // Send request to the correct endpoint
             fetch('http://localhost:5000/process_query', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 
-                    query: query,
-                    timestamp: new Date().toISOString(),
-                    user_id: 'web-user-' + Math.floor(Math.random() * 1000)
-                })
+                body: JSON.stringify({ query })
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     document.getElementById('response').innerText = 'Error: ' + data.error;
+                } else if (data.intent === 'get_doctor_details' && data.entities.disease_name) {
+                    fetchDoctors(data.entities.disease_name);
                 } else {
                     document.getElementById('response').innerText = data.response || 'No response received.';
                 }
@@ -194,11 +183,27 @@
             .catch(error => {
                 console.error('Error:', error);
                 document.getElementById('response').innerText = 'An error occurred: ' + error.message;
-                checkSystemStatus(); // Check if system is still online
+                checkSystemStatus();
             });
         }
         
-        // Allow Enter key to submit
+        function fetchDoctors(disease) {
+            fetch(`http://localhost:5000/get_doctors?disease=${encodeURIComponent(disease)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error || !data.doctors.length) {
+                        document.getElementById('response').innerText = `No doctors found for ${disease}.`;
+                    } else {
+                        let doctorList = data.doctors.map(doc => `👨‍⚕️ Dr. ${doc.name}, ${doc.specialization}, Contact: ${doc.contact}`).join("\n");
+                        document.getElementById('response').innerText = `Doctors for ${disease}:\n\n${doctorList}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('response').innerText = 'Could not retrieve doctor details. Try again later.';
+                });
+        }
+
         document.getElementById('query').addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 sendQuery();
