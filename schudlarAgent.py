@@ -53,17 +53,22 @@ class AppointmentSchedulerAgent:
 
             with closing(sqlite3.connect('hospital.db')) as conn:
                 c = conn.cursor()
+                
+                # Check if doctor is already booked at that time OR patient has another appointment with the same doctor on the same date
                 c.execute("""
                     SELECT COUNT(*) FROM appointments 
-                    WHERE doctor_name = ? AND date = ? AND time = ?
-                """, (doctor_name, date, time))
+                    WHERE (doctor_name = ? AND date = ? AND time = ?) 
+                    OR (patient_name = ? AND doctor_name = ? AND date = ?)
+                """, (doctor_name, date, time, patient_name, doctor_name, date))
+                
                 count = c.fetchone()[0]
                 
                 if count > 0:
                     return jsonify({
-                        'response': f"Dr. {doctor_name} already has an appointment on {date} at {time}. Please choose another time."
+                        'response': f"Dr. {doctor_name} is already booked at {time}, or {patient_name} already has an appointment with Dr. {doctor_name} on {date}. Please choose another time."
                     })
                 
+                # Insert the appointment
                 c.execute("""
                     INSERT INTO appointments (patient_name, doctor_name, date, time) 
                     VALUES (?, ?, ?, ?)
@@ -79,6 +84,7 @@ class AppointmentSchedulerAgent:
             return jsonify({
                 'error': f"Failed to schedule appointment: {str(e)}"
             }), 500
+
 
 if __name__ == '__main__':
     print("Starting Scheduler Agent on http://localhost:5001...")
