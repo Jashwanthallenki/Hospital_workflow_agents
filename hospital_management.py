@@ -32,23 +32,37 @@ class ParentAgent:
         try:
             model = genai.GenerativeModel('gemini-2.0-pro-exp')
             prompt = f"""Analyze the following query for a hospital management system: '{query}'
-            
+
             Determine the intent and extract relevant entities.
-            
+
             Possible intents:
             - schedule_appointment
             - inquire_appointment
-            
+            - get_doctor_details
+
             For schedule_appointment, extract:
             - patient_name
             - doctor_name
             - date
             - time
-            
+
             For inquire_appointment, extract:
             - patient_name
-            
+
+            For get_doctor_details, extract:
+            - disease_name (Identify the disease from symptoms)
+            - specilaist name (from the disease name identify which specialist can cure the disease like heart disesae can be cured by cardiolgist etc)
+                available specialists :
+                
+                Cardiologist
+                Dermatologist
+                Neurologist
+                Pediatrician
+                Orthopedic
+                General Physician
+
             Return the result in JSON format with keys 'intent' and 'entities'."""
+
             
             response = model.generate_content(prompt)
             response_text = response.text.strip()
@@ -86,6 +100,8 @@ class ParentAgent:
                 child_agent_url = 'http://localhost:5001/schedule_appointment'
             elif self.intent == 'inquire_appointment':
                 child_agent_url = 'http://localhost:5002/inquire_appointment'
+            elif self.intent == 'get_doctor_details':
+                child_agent_url = 'http://localhost:5002/get_doctors'
 
             if not child_agent_url:
                 return jsonify({'response': "I couldn't understand what you want to do. Please try asking about appointments or scheduling one."})
